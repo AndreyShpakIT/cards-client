@@ -5,7 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:AppClient" xmlns:views="clr-namespace:AppClient.Views"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="MainWindow" Height="450" Width="800"
+        MinHeight="600"
+        MinWidth="550">
 
     <Window.Resources>
         <views:MainView x:Key="view"/>

@@ -82,6 +82,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Convertors\BoolToVisibilityConvertor.cs" />
     <Compile Include="Extentions\RelayCommand.cs" />
     <Compile Include="Extentions\ViewModelBase.cs" />
     <Compile Include="Models\Card.cs" />

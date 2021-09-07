@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 
 namespace AppClient.Extentions
 {
-    public class ViewModelBase : INotifyPropertyChanged
+    public class Notifier : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;
 
