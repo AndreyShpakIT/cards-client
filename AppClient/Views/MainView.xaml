@@ -4,39 +4,206 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:AppClient.Views" 
-             xmlns:viewmodels="clr-namespace:AppClient.ViewModels"
+             xmlns:viewmodels="clr-namespace:AppClient.ViewModels" xmlns:materialdesign="http://schemas.microsoft.com/netfx/2009/xaml/presentation"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
 
     <UserControl.Resources>
         <viewmodels:MainViewModel x:Key="vm"/>
     </UserControl.Resources>
-    
+
     <Grid DataContext="{StaticResource vm}">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition/>
-            <ColumnDefinition/>
-        </Grid.ColumnDefinitions>
-        <StackPanel>
-            <TextBlock
-                Text="Заголовок"/>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="50"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+
+        <Grid 
+            Margin="10 8"
+            Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel 
+                HorizontalAlignment="Right"
+                Grid.Column="1"
+                Orientation="Horizontal">
+                <Button
+                    Width="130"
+                    Content="Добавить"
+                    Command="{Binding OpenPopupCommand}"
+                    Margin="0 00 10 0"
+                    />
+                <Button
+                    Width="130"
+                    Content="Обновить"
+                    Command="{Binding GetCommand}"
+                    />
+            </StackPanel>
             <TextBox 
-                Text="{Binding Title}"
+                Margin="0 0 20 0"
                 />
-            <TextBlock
-                Text="Картинка"/>
-            <TextBox
-                Text="{Binding ImageUri}"
-                />
-            <Button
-                Content="Отправить"
-                Command="{Binding PostCommand}"
-                />
-            <Button
-                Content="Получить"
-                Command="{Binding GetCommand}"
-                />
-        </StackPanel>
+        </Grid>
+
+        <Popup 
+            Placement="Center"
+            StaysOpen="False"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch"
+            AllowsTransparency="True"
+            x:Name="changePopup"
+            Grid.Row="1"
+            Width="500"
+            MinHeight="200"
+            IsOpen="{Binding IsPopupOpen}"
+            >
+            <Border 
+                Padding="20" 
+                HorizontalAlignment="Stretch"
+                >
+                <Grid>
+                    <Border 
+                        Background="White"
+                        BorderThickness="0" 
+                        CornerRadius="7">
+                        <Border.Effect>
+                            <DropShadowEffect 
+                                ShadowDepth="0" 
+                                BlurRadius="20" 
+                                Opacity="0.6"/>
+                        </Border.Effect>
+                    </Border>
+                    <Border CornerRadius="7">
+                        <Grid Margin="15 0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="40"/>
+                                <RowDefinition MinHeight="80"/>
+                                <RowDefinition/>
+                                <RowDefinition Height="60"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock 
+                                Grid.Row="0"
+                                Text="Добавление"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                FontSize="20"
+                                FontWeight="Bold"
+                                />
+
+                            <StackPanel
+                                Grid.Row="1"
+                                >
+                                <TextBlock
+                                    Text="Заголовок карточки:"
+                                    />
+                                <TextBox
+                                    Text="{Binding Title}"
+                                    Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                                    />
+
+                            </StackPanel>
+
+                            <StackPanel
+                                Grid.Row="2"
+                                >
+                                <Button 
+                                    Height="30"
+                                    Content="Выбрать картинку"
+                                    Foreground="Black"
+                                    Style="{StaticResource MaterialDesignFlatButton}"
+                                    />
+                                <Image 
+                                    Margin="0 10"
+                                    Height="100"
+                                    Width="50"
+                                    />
+
+                            </StackPanel>
+
+                            <Button 
+                                Grid.Row="10"
+                                Content="Добавить"
+                                Margin="10"
+                                Command="{Binding PostCommand}"
+                                />
+
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Border>
+        </Popup>
+
+        <ListBox 
+            Margin="10"
+            ItemsSource="{Binding Items }" 
+            HorizontalContentAlignment="Stretch"
+            x:Name="listBox"                 
+            Grid.ColumnSpan="4"
+            Grid.Row="1"
+            VirtualizingStackPanel.VirtualizationMode="Recycling"
+            >
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="{x:Type ListBoxItem}">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                    <Setter Property="VerticalContentAlignment" Value="Top"/>
+                    <Style.Triggers>
+                        <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                            <Setter Property="IsSelected" Value="True"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </ListBox.ItemContainerStyle>
+
+            <ListBox.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel />
+                </ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Grid 
+                        Grid.Row="1"
+                        Height="200"
+                        Width="150"
+                        >
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="30"/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+
+                        <Grid 
+                            Background="LightGray"
+                            Grid.Row="0">
+                            <TextBlock
+                                FontSize="15"
+                                Text="{Binding Title, FallbackValue=Title}"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                />
+                            <TextBlock
+                                FontSize="10"
+                                FontWeight="Bold"
+                                Text="{Binding Id, FallbackValue=Id}"
+                                HorizontalAlignment="Center"
+                                />
+                        </Grid>
+
+                        <Grid 
+                            Background="WhiteSmoke"
+                            Grid.Row="1">
+                            <TextBlock Text="{Binding ImageUri}"/>
+                        </Grid>
+                    </Grid>
+
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+               
+        
     </Grid>
-    
+
 </UserControl>

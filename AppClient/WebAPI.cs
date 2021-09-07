@@ -9,7 +9,7 @@ namespace AppClient
 {
     class WebAPI
     {
-        public static readonly string ServerUri = "https://localhost:5001/api/api/";
+        public static readonly string ServerUri = "https://localhost:44351/api/";
         public static readonly string CardsUri = "Cards";
 
         public static Task<HttpResponseMessage> GetCall(string url)
@@ -31,7 +31,7 @@ namespace AppClient
             }
             catch(Exception)
             {
-                throw;
+                return null;
             }
         }
 
@@ -54,8 +54,9 @@ namespace AppClient
             }
             catch (Exception)
             {
-                throw;
+                return null;
             }
+            
         }
 
         public static Task<HttpResponseMessage> PutCall<T>(string url, T model) where T : class
@@ -77,7 +78,7 @@ namespace AppClient
             }
             catch (Exception)
             {
-                throw;
+                return null;
             }
         }
 
@@ -100,7 +101,7 @@ namespace AppClient
             }
             catch (Exception)
             {
-                throw;
+                return null;
             }
         }
     }

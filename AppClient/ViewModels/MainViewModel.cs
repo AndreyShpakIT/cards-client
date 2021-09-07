@@ -1,6 +1,6 @@
 ﻿using AppClient.Extentions;
 using AppClient.Models;
-using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Net.Http;
 using System.Windows;
 
@@ -11,12 +11,15 @@ namespace AppClient.ViewModels
         public MainViewModel()
         {
             InitializeCommands();
+            ImageUri = "<image uri>";
         }
 
         #region Fields
 
         private string _title;
         private string _imageUri;
+        private ObservableCollection<Card> _items;
+        private bool _isPopupOpen;
 
         #endregion
 
@@ -32,6 +35,16 @@ namespace AppClient.ViewModels
             get => _imageUri;
             set => SetValue(ref _imageUri, value);
         }
+        public ObservableCollection<Card> Items
+        {
+            get => _items;
+            set => SetValue(ref _items, value);
+        }
+        public bool IsPopupOpen
+        {
+            get => _isPopupOpen;
+            set => SetValue(ref _isPopupOpen, value);
+        }
 
         #endregion
 
@@ -40,6 +53,7 @@ namespace AppClient.ViewModels
 
         public RelayCommand GetCommand { get; set; }
         public RelayCommand PostCommand { get; set; }
+        public RelayCommand OpenPopupCommand { get; set; }
 
         #endregion
 
@@ -47,7 +61,9 @@ namespace AppClient.ViewModels
         private void InitializeCommands()
         {
             GetCommand = new RelayCommand(GetCards);
+            //PostCommand = new RelayCommand(PostCard);
             PostCommand = new RelayCommand(PostCard);
+            OpenPopupCommand = new RelayCommand(OpenPopup);
         }
         private void PostCard(object param)
         {
@@ -70,11 +86,21 @@ namespace AppClient.ViewModels
         private void GetCards(object param)
         {
             var cardDetails = WebAPI.GetCall(WebAPI.CardsUri);
+            
             if (cardDetails != null && cardDetails.Result.StatusCode == System.Net.HttpStatusCode.OK)
             {
-                var cards = cardDetails.Result.Content.ReadAsAsync<List<Card>>().Result;
+                Items = cardDetails.Result.Content.ReadAsAsync<ObservableCollection<Card>>().Result;
+            }
+            else
+            {
+                MessageBox.Show("failed");
             }
         }
+        private void OpenPopup(object param)
+        {
+            IsPopupOpen = true;
+        }
+        
         #endregion
     }
 }
