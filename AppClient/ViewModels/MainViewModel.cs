@@ -9,6 +9,9 @@ using System.Windows.Media.Imaging;
 using System.Linq;
 using System.IO;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using System.Windows.Threading;
+using System.Threading;
 
 namespace AppClient.ViewModels
 {
@@ -38,19 +41,23 @@ namespace AppClient.ViewModels
         {
             InitializeCommands();
             //Items = Data.Items;
-            
-            GetCards(null);
+
+            Task.Factory.StartNew(() => 
+            {
+                GetCards(null);
+            });
         }
 
         #region Fields
 
-        private bool _isEditing;
-        private string _editingCard;
-        private string _title;
-        private ObservableCollection<Card> _items;
-        private bool _isPopupOpen;
-        private BitmapImage _image;
-        private string _buttonContent;
+        private bool isEditing;
+        private string editingCard;
+        private string title;
+        private ObservableCollection<Card> items;
+        private bool isPopupOpen;
+        private BitmapImage image;
+        private string buttonContent;
+        private string address = "localhost:44351";
 
         #endregion
 
@@ -58,28 +65,37 @@ namespace AppClient.ViewModels
 
         public string Title
         {
-            get => _title;
-            set => SetValue(ref _title, value);
+            get => title;
+            set => SetValue(ref title, value);
         }
         public ObservableCollection<Card> Items
         {
-            get => _items;
-            set => SetValue(ref _items, value);
+            get => items;
+            set => SetValue(ref items, value);
         }
         public bool IsPopupOpen
         {
-            get => _isPopupOpen;
-            set => SetValue(ref _isPopupOpen, value);
+            get => isPopupOpen;
+            set => SetValue(ref isPopupOpen, value);
         }
         public BitmapImage Image
         {
-            get => _image;
-            set => SetValue(ref _image, value);
+            get => image;
+            set => SetValue(ref image, value);
         }
         public string ButtonContent
         {
-            get => _buttonContent;
-            set => SetValue(ref _buttonContent, value);
+            get => buttonContent;
+            set => SetValue(ref buttonContent, value);
+        }
+        public string Address
+        {
+            get => address;
+            set
+            {
+                SetValue(ref address, value);
+                WebAPI.ServerName = value;
+            }
         }
 
         #endregion
@@ -101,7 +117,13 @@ namespace AppClient.ViewModels
         #region Methods
         private void InitializeCommands()
         {
-            GetCommand = new RelayCommand(GetCards);
+            GetCommand = new RelayCommand(async (p) =>
+            {
+                await Task.Run(() =>
+                {
+                    GetCards(null);
+                });
+            });
             CreateCardCommand = new RelayCommand(CreateCard);
             TogglePopupCommand = new RelayCommand(TogglePopup);
             SelectImageCommand = new RelayCommand(SelectImage);
@@ -118,7 +140,7 @@ namespace AppClient.ViewModels
                 return;
             }
 
-            if (!_isEditing && Items.Any(card => card.Title == Title))
+            if (!this.isEditing && Items.Any(card => card.Title == Title))
             {
                 MessageBox.Show("The card named " + Title + " already exists!");
                 return;
@@ -126,15 +148,15 @@ namespace AppClient.ViewModels
 
             Card newCard = new Card();
 
-            if (_isEditing)
+            if (this.isEditing)
             {
-                newCard = Items.Where(c => c.Title == _editingCard).FirstOrDefault();
+                newCard = Items.Where(c => c.Title == editingCard).FirstOrDefault();
                 if (newCard == null)
                 {
-                    MessageBox.Show("Cannot edit card: '" + _editingCard + "'");
+                    MessageBox.Show("Cannot edit card: '" + editingCard + "'");
                     return;
                 }
-                if (Items.Any(c => c.Title == Title && newCard.Title != _editingCard))
+                if (Items.Any(c => c.Title == Title && newCard.Title != editingCard))
                 {
                     MessageBox.Show("This name already exists!");
                     return;
@@ -150,7 +172,7 @@ namespace AppClient.ViewModels
                 newCard.ImageBytes = stringBytes;
             }
 
-            bool isEditing = _isEditing;
+            bool isEditing = this.isEditing;
             TogglePopup(false);
 
             if (isEditing)
@@ -166,7 +188,7 @@ namespace AppClient.ViewModels
         {
             try
             {
-                var details = await WebAPI.PostCall(WebAPI.CardsUri, card.GetSCard());
+                var details = await WebAPI.PostCall(card.GetSCard());
                 if (ShowResult(details))
                 {
                     card.Id = GetIdOfResponse(details);
@@ -186,7 +208,7 @@ namespace AppClient.ViewModels
         {
             try
             {
-                var details = await WebAPI.PutCall(WebAPI.CardsUri, card.GetSCard());
+                var details = await WebAPI.PutCall(card.GetSCard());
                 card.Id = GetIdOfResponse(details);
 
                 ShowResult(details);
@@ -221,27 +243,26 @@ namespace AppClient.ViewModels
 
         private void GetCards(object param)
         {
-            GetAsync();
-            if (Items == null)
-            {
-                Items = new ObservableCollection<Card>();
-            }
-        }
-        private async void GetAsync()
-        {
+
             try
             {
-                var cardDetails = await WebAPI.GetCall(WebAPI.CardsUri);
 
-                if (cardDetails != null && cardDetails.StatusCode == System.Net.HttpStatusCode.OK)
+                var cardDetails = WebAPI.GetCall();
+
+                if (cardDetails != null && cardDetails.Result.StatusCode == System.Net.HttpStatusCode.OK)
                 {
-                    var items = cardDetails.Content.ReadAsAsync<ObservableCollection<Card>>().Result;
-                    foreach (var item in items)
+                    Application.Current.Dispatcher.BeginInvoke(
+                    DispatcherPriority.Background,
+                    new Action(() =>
                     {
-                        byte[] bytes = Convert.FromBase64String(item.ImageBytes);
-                        item.Image = BytesToImage(bytes);
-                    }
-                    Items = items;
+                        var items = cardDetails.Result.Content.ReadAsAsync<ObservableCollection<Card>>().Result;
+                        foreach (var item in items)
+                        {
+                            byte[] bytes = Convert.FromBase64String(item.ImageBytes);
+                            item.Image = BytesToImage(bytes);
+                        }
+                        Items = items;
+                    }));
                 }
                 else
                 {
@@ -250,17 +271,26 @@ namespace AppClient.ViewModels
             }
             catch (HttpRequestException re)
             {
-                MessageBox.Show("HttpRequestException: " + re.Message);
+                MessageBox.Show(nameof(HttpRequestException) + ": " + re.Message);
             }
-            catch (Exception) { }
+            catch (Exception e) 
+            {
+                MessageBox.Show(nameof(Exception) + ": " + e.Message);
+            }
+
+            if (Items == null)
+            {
+                Items = new ObservableCollection<Card>();
+            }
         }
-        private void TogglePopup(object param)
+
+    private void TogglePopup(object param)
         {
             IsPopupOpen = Convert.ToBoolean(param);
             ButtonContent = "Create";
             Title = "";
             Image = null;
-            _isEditing = false;
+            isEditing = false;
         }
         private void SelectImage(object param)
         {
@@ -297,32 +327,46 @@ namespace AppClient.ViewModels
         {
             string title = Convert.ToString(param);
             Card card = Items.Where(c => c.Title == title).FirstOrDefault();
-
+            if (card == null)
+            {
+                MessageBox.Show("Item is not found!");
+                return;
+            }
             try
             {
-                var response = await WebAPI.DeleteCall(WebAPI.CardsUri, card.Id.ToString());
+                var response = await WebAPI.DeleteCall(card.Id.ToString());
                 if (ShowResult(response))
                 {
-                    if (!Items.Remove(card))
-                    {
-                        MessageBox.Show("Cannot delete card: '" + title + "'");
-                        return;
-                    }
+                    await Application.Current.Dispatcher.BeginInvoke(
+                        DispatcherPriority.Background,
+                        new Action(() =>
+                        {
+                            if (!Items.Remove(card))
+                            {
+                                MessageBox.Show("Cannot delete card: '" + title + "'");
+                                return;
+                            }
+                        })
+                    );
                 }
             }
             catch (HttpRequestException e)
             {
                 MessageBox.Show(nameof(HttpRequestException) + ": " + e.Message);
+                return;
             }
-            catch (Exception) { }
+            catch (Exception e)
+            {
+                MessageBox.Show(nameof(Exception) + ": " + e.Message);
+            }
         }
         private void EditCard(object param)
         {
             TogglePopup(true);
             ButtonContent = "Edit";
-            _isEditing = true;
+            isEditing = true;
 
-            string title = _editingCard = Convert.ToString(param);
+            string title = editingCard = Convert.ToString(param);
             Card card = Items.Where(c => c.Title == title).FirstOrDefault();
             if (card == null)
             {
@@ -352,7 +396,7 @@ namespace AppClient.ViewModels
                 try
                 {
                     long[] arr = ids.ToArray<long>();
-                    var response = await WebAPI.DeleteCall(WebAPI.CardsUri + "/delete", arr);
+                    var response = await WebAPI.DeleteCall(arr);
                     if (ShowResult(response))
                     {
                         foreach (long id in ids)
@@ -372,23 +416,6 @@ namespace AppClient.ViewModels
             {
                 MessageBox.Show("Select at least 1 card!");
             }
-        }
-        public byte[] ImageToBytes(BitmapImage image)
-        {
-            if (image == null) return new byte[0];
-            //image.BeginInit();
-            Stream stream = image.StreamSource;
-            //image.EndInit();
-            byte[] buffer = null;
-            if (stream != null && stream.Length > 0)
-            {
-                using (BinaryReader br = new BinaryReader(stream))
-                {
-                    buffer = br.ReadBytes((int)stream.Length);
-                }
-            }
-
-            return buffer;
         }
         public BitmapImage BytesToImage(byte[] array)
         {

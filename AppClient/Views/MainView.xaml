@@ -32,21 +32,29 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <Button
-                HorizontalAlignment="Left"
-                Width="130"
-                Content="Delete selected"
-                Command="{Binding DeleteSelectedCommand}"
-                Margin="0 0 10 0"
-                Style="{StaticResource MaterialDesignOutlinedButton}"
-                Foreground="DarkRed"
+            <TextBox
+                Margin="15 0"
+                materialDesign:HintAssist.Hint="Server adress"
+                Foreground="Black"
+                FontSize="18"
+                Text="{Binding Address}"
                 />
 
             <StackPanel 
                 HorizontalAlignment="Right"
                 Grid.Column="1"
                 Orientation="Horizontal">
-                
+
+                <Button
+                    HorizontalAlignment="Left"
+                    Width="130"
+                    Content="Delete selected"
+                    Command="{Binding DeleteSelectedCommand}"
+                    Margin="0 0 10 0"
+                    Style="{StaticResource MaterialDesignOutlinedButton}"
+                    Foreground="DarkRed"
+                    />
+
                 <Button
                     Width="130"
                     Content="Sort by TITLE"

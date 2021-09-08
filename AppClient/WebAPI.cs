@@ -11,13 +11,16 @@ namespace AppClient
 {
     class WebAPI
     {
-        public static readonly string ServerUri = "https://localhost:44351/api/";
-        public static readonly string CardsUri = "cards";
+        private static int timeout = 3000;
 
-        public static Task<HttpResponseMessage> GetCall(string url)
+        public static string ServerName = "localhost:44351";
+        public static readonly string CardsUri = "/cards";
+        public static readonly string DeleteUri = "/delete";
+
+        public static Task<HttpResponseMessage> GetCall()
         {
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-            string apiUrl = ServerUri + url;
+            string apiUrl = CreateUri() + CardsUri;
             using (HttpClient client = new HttpClient())
             {
                 client.BaseAddress = new Uri(apiUrl);
@@ -25,14 +28,14 @@ namespace AppClient
                 client.DefaultRequestHeaders.Accept.Clear();
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                 var response = client.GetAsync(apiUrl);
-                response.Wait();
+                response.Wait(timeout);
                 return response;
             }
         }
-        public static async Task<HttpResponseMessage> PostCall(string url, SCard model)
+        public static async Task<HttpResponseMessage> PostCall(SCard model)
         {
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-            string apiUrl = ServerUri + url;
+            string apiUrl = CreateUri() + CardsUri;
             using (HttpClient client = new HttpClient())
             {
                 client.BaseAddress = new Uri(apiUrl);
@@ -48,10 +51,10 @@ namespace AppClient
                 return response;
             }
         }
-        public static async Task<HttpResponseMessage> PutCall(string url, SCard model)
+        public static async Task<HttpResponseMessage> PutCall(SCard model)
         {
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-            string apiUrl = ServerUri + url;
+            string apiUrl = CreateUri() + CardsUri;
             using (HttpClient client = new HttpClient())
             {
                 client.BaseAddress = new Uri(apiUrl);
@@ -67,10 +70,10 @@ namespace AppClient
                 return response;
             }
         }
-        public static Task<HttpResponseMessage> DeleteCall(string url, string id)
+        public static Task<HttpResponseMessage> DeleteCall(string id)
         {
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-            string apiUrl = ServerUri + url + '/' + id;
+            string apiUrl = CreateUri() + CardsUri + '/' + id;
             using (HttpClient client = new HttpClient())
             {
                 client.BaseAddress = new Uri(apiUrl);
@@ -78,14 +81,14 @@ namespace AppClient
                 client.DefaultRequestHeaders.Accept.Clear();
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                 var response = client.DeleteAsync(apiUrl);
-                response.Wait();
+                response.Wait(timeout);
                 return response;
             }
         }
-        public static Task<HttpResponseMessage> DeleteCall(string url, long[] ids)
+        public static Task<HttpResponseMessage> DeleteCall(long[] ids)
         {
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-            string apiUrl = ServerUri + url;
+            string apiUrl = CreateUri() + DeleteUri;
             using (HttpClient client = new HttpClient())
             {
                 client.BaseAddress = new Uri(apiUrl);
@@ -98,9 +101,14 @@ namespace AppClient
                 HttpContent content = new StringContent(jsonString, Encoding.UTF8, "application/json");
 
                 var response = client.PostAsync(apiUrl, content);
-                response.Wait();
+                response.Wait(timeout);
                 return response;
             }
+        }
+
+        private static string CreateUri()
+        {
+            return "https://" + ServerName + "/api";
         }
     }
 }
