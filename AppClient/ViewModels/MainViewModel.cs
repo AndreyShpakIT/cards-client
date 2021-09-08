@@ -128,11 +128,11 @@ namespace AppClient.ViewModels
                     Image = Image
                 };
 
-                byte[] bytesArr = ImageToBytes(Image);
+                byte[] bytes = ConvertPngToBytes(Image);
+                newCard.ImageBytes = bytes;
 
-                byte[] bytes = ImageToBytes(Image);
-                string stringBytes = Convert.ToString(bytes);
-                newCard.ImageBytes = stringBytes;
+                //string stringBytes = Convert.ToString(bytes);
+                //newCard.ImageBytes = stringBytes;
 
                 Items.Add(newCard);
             }
@@ -152,9 +152,12 @@ namespace AppClient.ViewModels
 
                 newCard.Title = Title;
                 newCard.Image = Image;
-                byte[] bytes = ImageToBytes(Image);
-                string stringBytes = Convert.ToString(bytes);
-                newCard.ImageBytes = stringBytes;
+                
+                byte[] bytes = ConvertPngToBytes(Image);
+                newCard.ImageBytes = bytes;
+                
+                //string stringBytes = Convert.ToString(bytes);
+                //newCard.ImageBytes = stringBytes;
             }
 
             TogglePopup(false);
@@ -248,10 +251,12 @@ namespace AppClient.ViewModels
             Image = card.Image;
         }
 
-        public byte[] ImageToBytes(BitmapImage imageSource)
+        public byte[] ImageToBytes(BitmapImage image)
         {
-            if (imageSource == null) return new byte[0];
-            Stream stream = imageSource.StreamSource;
+            if (image == null) return new byte[0];
+            //image.BeginInit();
+            Stream stream = image.StreamSource;
+            //image.EndInit();
             byte[] buffer = null;
             if (stream != null && stream.Length > 0)
             {
@@ -278,6 +283,15 @@ namespace AppClient.ViewModels
                 image.EndInit();
                 return image;
             }
+        }
+
+        public byte[] ConvertPngToBytes(BitmapImage imageC)
+        {
+            MemoryStream memStream = new MemoryStream();
+            PngBitmapEncoder encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(imageC));
+            encoder.Save(memStream);
+            return memStream.ToArray();
         }
 
         #endregion
