@@ -4,17 +4,17 @@
 winexe
 C#
 .cs
-F:\User\web\RestApp\Client\app_client_rest\AppClient\obj\Debug\
+D:\app_rest\app_client_rest\AppClient\obj\Debug\
 AppClient
 none
 false
 DEBUG;TRACE
-F:\User\web\RestApp\Client\app_client_rest\AppClient\App.xaml
+D:\app_rest\app_client_rest\AppClient\App.xaml
 2-1331668027
 
-121970101050
-125-845350795
+13-1244491601
+1261675761907
 MainWindow.xaml;Views\MainView.xaml;
 
-True
+False
 

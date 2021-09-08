@@ -1,10 +1,11 @@
-﻿using System;
+﻿using AppClient.Models;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text;
 using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Threading;
 
 namespace AppClient
 {
@@ -15,94 +16,90 @@ namespace AppClient
 
         public static Task<HttpResponseMessage> GetCall(string url)
         {
-            try
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+            string apiUrl = ServerUri + url;
+            using (HttpClient client = new HttpClient())
             {
-                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                string apiUrl = ServerUri + url;
-                using (HttpClient client = new HttpClient())
-                {
-                    client.BaseAddress = new Uri(apiUrl);
-                    client.Timeout = TimeSpan.FromSeconds(900);
-                    client.DefaultRequestHeaders.Accept.Clear();
-                    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                    var response = client.GetAsync(apiUrl);
-                    response.Wait();
-                    return response;
-                }
-            }
-            catch(Exception)
-            {
-                return null;
+                client.BaseAddress = new Uri(apiUrl);
+                client.Timeout = TimeSpan.FromSeconds(900);
+                client.DefaultRequestHeaders.Accept.Clear();
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                var response = client.GetAsync(apiUrl);
+                response.Wait();
+                return response;
             }
         }
-
-        public static Task<HttpResponseMessage> PostCall<T>(string url, T model) where T : class
+        public static async Task<HttpResponseMessage> PostCall(string url, SCard model)
         {
-            try
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+            string apiUrl = ServerUri + url;
+            using (HttpClient client = new HttpClient())
             {
-                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                string apiUrl = ServerUri + url;
-                using (HttpClient client = new HttpClient())
-                {
-                    client.BaseAddress = new Uri(apiUrl);
-                    client.Timeout = TimeSpan.FromSeconds(6000);
-                    client.DefaultRequestHeaders.Accept.Clear();
-                    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                    var response = client.PostAsJsonAsync(apiUrl, model);
-                    response.Wait();
-                    return response;
-                }
-            }
-            catch (Exception e)
-            {
-                throw;
-            }
-            
-        }
+                client.BaseAddress = new Uri(apiUrl);
+                client.Timeout = TimeSpan.FromSeconds(6000);
+                client.DefaultRequestHeaders.Accept.Clear();
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-        public static Task<HttpResponseMessage> PutCall<T>(string url, T model) where T : class
-        {
-            try
-            {
-                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                string apiUrl = ServerUri + url;
-                using (HttpClient client = new HttpClient())
-                {
-                    client.BaseAddress = new Uri(apiUrl);
-                    client.Timeout = TimeSpan.FromSeconds(900);
-                    client.DefaultRequestHeaders.Accept.Clear();
-                    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                    var response = client.PutAsJsonAsync(apiUrl, model);
-                    response.Wait();
-                    return response;
-                }
-            }
-            catch (Exception)
-            {
-                return null;
+                JObject json = JObject.FromObject(model);
+                string jsonString = json.ToString();
+                HttpContent content = new StringContent(jsonString, Encoding.UTF8, "application/json");
+                var response = await client.PostAsync(apiUrl, content);
+
+                return response;
             }
         }
-
-        public static Task<HttpResponseMessage> DeleteCall(string url)
+        public static async Task<HttpResponseMessage> PutCall(string url, SCard model)
         {
-            try
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+            string apiUrl = ServerUri + url;
+            using (HttpClient client = new HttpClient())
             {
-                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                string apiUrl = ServerUri + url;
-                using (HttpClient client = new HttpClient())
-                {
-                    client.BaseAddress = new Uri(apiUrl);
-                    client.Timeout = TimeSpan.FromSeconds(900);
-                    client.DefaultRequestHeaders.Accept.Clear();
-                    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                    var response = client.DeleteAsync(apiUrl);
-                    response.Wait();
-                    return response;
-                }
+                client.BaseAddress = new Uri(apiUrl);
+                client.Timeout = TimeSpan.FromSeconds(6000);
+                client.DefaultRequestHeaders.Accept.Clear();
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("image/png"));
+
+                JObject json = JObject.FromObject(model);
+                string jsonString = json.ToString();
+                HttpContent content = new StringContent(jsonString, Encoding.UTF8, "application/json");
+                var response = await client.PutAsync(apiUrl, content);
+
+                return response;
             }
-            catch (Exception)
+        }
+        public static Task<HttpResponseMessage> DeleteCall(string url, string id)
+        {
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+            string apiUrl = ServerUri + url + '/' + id;
+            using (HttpClient client = new HttpClient())
             {
-                return null;
+                client.BaseAddress = new Uri(apiUrl);
+                client.Timeout = TimeSpan.FromSeconds(900);
+                client.DefaultRequestHeaders.Accept.Clear();
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                var response = client.DeleteAsync(apiUrl);
+                response.Wait();
+                return response;
+            }
+        }
+        public static Task<HttpResponseMessage> DeleteCall(string url, long[] ids)
+        {
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+            string apiUrl = ServerUri + url;
+            using (HttpClient client = new HttpClient())
+            {
+                client.BaseAddress = new Uri(apiUrl);
+                client.Timeout = TimeSpan.FromSeconds(900);
+                client.DefaultRequestHeaders.Accept.Clear();
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+                JArray json = JArray.FromObject(ids);
+                string jsonString = json.ToString();
+                HttpContent content = new StringContent(jsonString, Encoding.UTF8, "application/json");
+
+                var response = client.PostAsync(apiUrl, content);
+                response.Wait();
+                return response;
             }
         }
     }

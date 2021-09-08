@@ -8,7 +8,7 @@ using System.Windows;
 using System.Windows.Media.Imaging;
 using System.Linq;
 using System.IO;
-using System.Drawing;
+using System.Collections.Generic;
 
 namespace AppClient.ViewModels
 {
@@ -37,7 +37,9 @@ namespace AppClient.ViewModels
         public MainViewModel()
         {
             InitializeCommands();
-            Items = Data.Items;
+            //Items = Data.Items;
+            
+            GetCards(null);
         }
 
         #region Fields
@@ -91,6 +93,8 @@ namespace AppClient.ViewModels
         public RelayCommand SelectImageCommand { get; set; }
         public RelayCommand DeleteCardCommand { get; set; }
         public RelayCommand EditCardCommand { get; set; }
+        public RelayCommand SortCardsCommand { get; set; }
+        public RelayCommand DeleteSelectedCommand { get; set; }
 
         #endregion
 
@@ -101,12 +105,14 @@ namespace AppClient.ViewModels
             CreateCardCommand = new RelayCommand(CreateCard);
             TogglePopupCommand = new RelayCommand(TogglePopup);
             SelectImageCommand = new RelayCommand(SelectImage);
-            DeleteCardCommand = new RelayCommand(DeleteCard);
+            DeleteCardCommand = new RelayCommand(DeleteCardAsync);
             EditCardCommand = new RelayCommand(EditCard);
+            SortCardsCommand = new RelayCommand(SortCards);
+            DeleteSelectedCommand = new RelayCommand(DeleteSelectedAsync);
         }
         private void CreateCard(object param)
         {
-            if (string.IsNullOrEmpty(Title) /*|| Image == null*/)
+            if (string.IsNullOrEmpty(Title) || Image == null)
             {
                 MessageBox.Show("Enter title and image!");
                 return;
@@ -118,25 +124,9 @@ namespace AppClient.ViewModels
                 return;
             }
 
-            Card newCard;
+            Card newCard = new Card();
 
-            if (!_isEditing)
-            {
-                newCard = new Card
-                {
-                    Title = Title,
-                    Image = Image
-                };
-
-                byte[] bytes = ConvertPngToBytes(Image);
-                newCard.ImageBytes = bytes;
-
-                //string stringBytes = Convert.ToString(bytes);
-                //newCard.ImageBytes = stringBytes;
-
-                Items.Add(newCard);
-            }
-            else
+            if (_isEditing)
             {
                 newCard = Items.Where(c => c.Title == _editingCard).FirstOrDefault();
                 if (newCard == null)
@@ -144,46 +134,125 @@ namespace AppClient.ViewModels
                     MessageBox.Show("Cannot edit card: '" + _editingCard + "'");
                     return;
                 }
-                if (Items.Any(c => c.Title == Title))
+                if (Items.Any(c => c.Title == Title && newCard.Title != _editingCard))
                 {
                     MessageBox.Show("This name already exists!");
                     return;
                 }
+            }
+            newCard.Title = Title;
+            newCard.Image = Image;
 
-                newCard.Title = Title;
-                newCard.Image = Image;
-                
+            if (Image != null)
+            {
                 byte[] bytes = ConvertPngToBytes(Image);
-                newCard.ImageBytes = bytes;
-                
-                //string stringBytes = Convert.ToString(bytes);
-                //newCard.ImageBytes = stringBytes;
+                string stringBytes = Convert.ToBase64String(bytes);
+                newCard.ImageBytes = stringBytes;
             }
 
+            bool isEditing = _isEditing;
             TogglePopup(false);
-            var cardDetails = WebAPI.PostCall(WebAPI.CardsUri, newCard);
-            if (cardDetails != null && cardDetails.Result.StatusCode == System.Net.HttpStatusCode.Created)
+
+            if (isEditing)
             {
-                MessageBox.Show("Card has successfully been added!");
+                PutAsync(newCard);
             }
             else
             {
-                MessageBox.Show("Failed to update details.");
+                PostAsync(newCard);
             }
-
         }
+        private async void PostAsync(Card card)
+        {
+            try
+            {
+                var details = await WebAPI.PostCall(WebAPI.CardsUri, card.GetSCard());
+                if (ShowResult(details))
+                {
+                    card.Id = GetIdOfResponse(details);
+                    Items.Add(card);
+                }
+            }
+            catch (HttpRequestException re)
+            {
+                MessageBox.Show("HttpRequestException: " + re.Message);
+            }
+            catch (Exception)
+            {
+
+            }
+        }
+        private async void PutAsync(Card card)
+        {
+            try
+            {
+                var details = await WebAPI.PutCall(WebAPI.CardsUri, card.GetSCard());
+                card.Id = GetIdOfResponse(details);
+
+                ShowResult(details);
+            }
+            catch (HttpRequestException re)
+            {
+                MessageBox.Show("HttpRequestException: " + re.Message);
+            }
+            catch (Exception)
+            {
+
+            }
+        }
+        
+        private int GetIdOfResponse(HttpResponseMessage response)
+        {
+            return response == null ? -1 : Convert.ToInt32(response.Headers.Location.Segments.Last());
+        }
+        private bool ShowResult(HttpResponseMessage response)
+        {
+            if (response != null && response.IsSuccessStatusCode)
+            {
+                // MessageBox.Show("Operation succed!");
+                return true;
+            }
+            else
+            {
+                MessageBox.Show("Operation failed: " + response?.ReasonPhrase);
+                return false;
+            }
+        }
+
         private void GetCards(object param)
         {
-            var cardDetails = WebAPI.GetCall(WebAPI.CardsUri);
-            
-            if (cardDetails != null && cardDetails.Result.StatusCode == System.Net.HttpStatusCode.OK)
+            GetAsync();
+            if (Items == null)
             {
-                Items = cardDetails.Result.Content.ReadAsAsync<ObservableCollection<Card>>().Result;
+                Items = new ObservableCollection<Card>();
             }
-            else
+        }
+        private async void GetAsync()
+        {
+            try
             {
-                MessageBox.Show("failed");
+                var cardDetails = await WebAPI.GetCall(WebAPI.CardsUri);
+
+                if (cardDetails != null && cardDetails.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    var items = cardDetails.Content.ReadAsAsync<ObservableCollection<Card>>().Result;
+                    foreach (var item in items)
+                    {
+                        byte[] bytes = Convert.FromBase64String(item.ImageBytes);
+                        item.Image = BytesToImage(bytes);
+                    }
+                    Items = items;
+                }
+                else
+                {
+                    MessageBox.Show("Operation failed!");
+                }
             }
+            catch (HttpRequestException re)
+            {
+                MessageBox.Show("HttpRequestException: " + re.Message);
+            }
+            catch (Exception) { }
         }
         private void TogglePopup(object param)
         {
@@ -224,14 +293,28 @@ namespace AppClient.ViewModels
                 MessageBox.Show(e.Message);
             }
         }
-        private void DeleteCard(object param)
+        private async void DeleteCardAsync(object param)
         {
             string title = Convert.ToString(param);
             Card card = Items.Where(c => c.Title == title).FirstOrDefault();
-            if (!Items.Remove(card))
+
+            try
             {
-                MessageBox.Show("Cannot delete card: '" + title + "'");
+                var response = await WebAPI.DeleteCall(WebAPI.CardsUri, card.Id.ToString());
+                if (ShowResult(response))
+                {
+                    if (!Items.Remove(card))
+                    {
+                        MessageBox.Show("Cannot delete card: '" + title + "'");
+                        return;
+                    }
+                }
             }
+            catch (HttpRequestException e)
+            {
+                MessageBox.Show(nameof(HttpRequestException) + ": " + e.Message);
+            }
+            catch (Exception) { }
         }
         private void EditCard(object param)
         {
@@ -250,7 +333,46 @@ namespace AppClient.ViewModels
             Title = card.Title;
             Image = card.Image;
         }
-
+        private void SortCards(object param)
+        {
+            Items = new ObservableCollection<Card>(Items.OrderBy(card => card.Title));
+        }
+        private async void DeleteSelectedAsync(object param)
+        {
+            List<long> ids = new List<long>();
+            foreach(Card card in Items)
+            {
+                if (card.IsSelected) 
+                { 
+                    ids.Add(card.Id);
+                }
+            }
+            if (ids.Count > 0)
+            { 
+                try
+                {
+                    long[] arr = ids.ToArray<long>();
+                    var response = await WebAPI.DeleteCall(WebAPI.CardsUri + "/delete", arr);
+                    if (ShowResult(response))
+                    {
+                        foreach (long id in ids)
+                        {
+                            Card card = Items.Where(c => c.Id == id).First();
+                            Items.Remove(card);
+                        }
+                    }
+                }
+                catch (HttpRequestException e)
+                {
+                    MessageBox.Show(nameof(HttpRequestException) + ": " + e.Message);
+                }
+                catch (Exception) { }
+            }
+            else
+            {
+                MessageBox.Show("Select at least 1 card!");
+            }
+        }
         public byte[] ImageToBytes(BitmapImage image)
         {
             if (image == null) return new byte[0];
@@ -270,7 +392,7 @@ namespace AppClient.ViewModels
         }
         public BitmapImage BytesToImage(byte[] array)
         {
-            if (array == null)
+            if (array == null || array.Length == 0)
             {
                 return null;
             }

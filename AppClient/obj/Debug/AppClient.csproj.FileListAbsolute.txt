@@ -28,7 +28,6 @@ D:\app_rest\app_client_rest\AppClient\bin\Debug\System.Net.Http.Extensions.dll
 D:\app_rest\app_client_rest\AppClient\bin\Debug\System.Net.Http.Formatting.dll
 D:\app_rest\app_client_rest\AppClient\bin\Debug\System.Net.Http.Primitives.dll
 D:\app_rest\app_client_rest\AppClient\bin\Debug\Newtonsoft.Json.dll
-D:\app_rest\app_client_rest\AppClient\obj\Debug\AppClient.csprojAssemblyReference.cache
 D:\app_rest\app_client_rest\AppClient\obj\Debug\MainWindow.g.cs
 D:\app_rest\app_client_rest\AppClient\obj\Debug\Views\MainView.g.cs
 D:\app_rest\app_client_rest\AppClient\obj\Debug\App.g.cs
@@ -79,3 +78,5 @@ F:\User\web\RestApp\Client\app_client_rest\AppClient\obj\Debug\AppClient.csproj.
 F:\User\web\RestApp\Client\app_client_rest\AppClient\obj\Debug\AppClient.exe
 F:\User\web\RestApp\Client\app_client_rest\AppClient\obj\Debug\AppClient.pdb
 F:\User\web\RestApp\Client\app_client_rest\AppClient\obj\Debug\AppClient.csprojAssemblyReference.cache
+D:\app_rest\app_client_rest\AppClient\bin\Debug\Newtonsoft.Json.xml
+D:\app_rest\app_client_rest\AppClient\obj\Debug\AppClient.csprojAssemblyReference.cache

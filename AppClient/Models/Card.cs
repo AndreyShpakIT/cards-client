@@ -5,14 +5,25 @@ namespace AppClient.Models
 {
     class Card : Notifier
     {
-        private string title;
+        private string title = "";
         private BitmapImage image;
+        private long id = -1;
+        private bool isSelected;
 
-        public long Id { get; set; }
+        public long Id
+        {
+            get => id;
+            set => SetValue(ref id, value);
+        }
         public string Title 
         {
             get => title;
             set => SetValue(ref title, value);
+        }
+        public bool IsSelected
+        {
+            get => isSelected;
+            set => SetValue(ref isSelected, value);
         }
 
         public BitmapImage Image
@@ -20,6 +31,16 @@ namespace AppClient.Models
             get => image;
             set => SetValue(ref image, value);
         }
-        public byte[] ImageBytes { get; set; }
+        public string ImageBytes { get; set; } = "";
+
+        public SCard GetSCard()
+        {
+            return new SCard()
+            {
+                Id = this.Id,
+                Title = this.Title,
+                ImageBytes = this.ImageBytes,
+            };
+        }
     }
 }
