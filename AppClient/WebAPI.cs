@@ -4,13 +4,14 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace AppClient
 {
     class WebAPI
     {
         public static readonly string ServerUri = "https://localhost:44351/api/";
-        public static readonly string CardsUri = "Cards";
+        public static readonly string CardsUri = "cards";
 
         public static Task<HttpResponseMessage> GetCall(string url)
         {
@@ -44,7 +45,7 @@ namespace AppClient
                 using (HttpClient client = new HttpClient())
                 {
                     client.BaseAddress = new Uri(apiUrl);
-                    client.Timeout = TimeSpan.FromSeconds(900);
+                    client.Timeout = TimeSpan.FromSeconds(6000);
                     client.DefaultRequestHeaders.Accept.Clear();
                     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                     var response = client.PostAsJsonAsync(apiUrl, model);
@@ -52,9 +53,9 @@ namespace AppClient
                     return response;
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                return null;
+                throw;
             }
             
         }

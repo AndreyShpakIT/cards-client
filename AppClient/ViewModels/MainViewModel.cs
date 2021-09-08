@@ -6,8 +6,9 @@ using System.Collections.ObjectModel;
 using System.Net.Http;
 using System.Windows;
 using System.Windows.Media.Imaging;
-using System.Windows.Controls;
 using System.Linq;
+using System.IO;
+using System.Drawing;
 
 namespace AppClient.ViewModels
 {
@@ -18,7 +19,6 @@ namespace AppClient.ViewModels
             new Card()
             {
                 Title = "Birds",
-
             },
             new Card()
             {
@@ -27,7 +27,6 @@ namespace AppClient.ViewModels
             new Card()
             {
                 Title = "Fishes",
-
             },
         };
     }
@@ -107,7 +106,7 @@ namespace AppClient.ViewModels
         }
         private void CreateCard(object param)
         {
-            if (string.IsNullOrEmpty(Title) || Image == null)
+            if (string.IsNullOrEmpty(Title) /*|| Image == null*/)
             {
                 MessageBox.Show("Enter title and image!");
                 return;
@@ -119,43 +118,54 @@ namespace AppClient.ViewModels
                 return;
             }
 
+            Card newCard;
+
             if (!_isEditing)
             {
-                Card newCard = new Card
+                newCard = new Card
                 {
                     Title = Title,
                     Image = Image
                 };
 
+                byte[] bytesArr = ImageToBytes(Image);
+
+                byte[] bytes = ImageToBytes(Image);
+                string stringBytes = Convert.ToString(bytes);
+                newCard.ImageBytes = stringBytes;
+
                 Items.Add(newCard);
-                IsPopupOpen = false;
-                Title = "";
-                Image = null;
-
-                return;
-
-                var cardDetails = WebAPI.PostCall(WebAPI.CardsUri, newCard);
-                if (cardDetails != null && cardDetails.Result.StatusCode == System.Net.HttpStatusCode.Created)
-                {
-                    MessageBox.Show("Card has successfully been added!");
-                }
-                else
-                {
-                    MessageBox.Show("Failed to update details.");
-                }
             }
             else
             {
-                Card card = Items.Where(c => c.Title == _editingCard).FirstOrDefault();
-                if (card == null)
+                newCard = Items.Where(c => c.Title == _editingCard).FirstOrDefault();
+                if (newCard == null)
                 {
                     MessageBox.Show("Cannot edit card: '" + _editingCard + "'");
                     return;
                 }
-                card.Title = Title;
-                card.Image = Image;
+                if (Items.Any(c => c.Title == Title))
+                {
+                    MessageBox.Show("This name already exists!");
+                    return;
+                }
 
-                TogglePopup(false);
+                newCard.Title = Title;
+                newCard.Image = Image;
+                byte[] bytes = ImageToBytes(Image);
+                string stringBytes = Convert.ToString(bytes);
+                newCard.ImageBytes = stringBytes;
+            }
+
+            TogglePopup(false);
+            var cardDetails = WebAPI.PostCall(WebAPI.CardsUri, newCard);
+            if (cardDetails != null && cardDetails.Result.StatusCode == System.Net.HttpStatusCode.Created)
+            {
+                MessageBox.Show("Card has successfully been added!");
+            }
+            else
+            {
+                MessageBox.Show("Failed to update details.");
             }
 
         }
@@ -188,19 +198,22 @@ namespace AppClient.ViewModels
             {
                 OpenFileDialog dialog = new OpenFileDialog();
                 dialog.InitialDirectory = "c:\\";
-                dialog.Filter = "Image files | *.jpg; *.png;";
+                dialog.Filter = "Image files | *.png;";
                 dialog.RestoreDirectory = true;
 
                 if (dialog.ShowDialog() == true)
                 {
                     string selectedFileName = dialog.FileName;
 
+                    
+                    System.Drawing.Image image = System.Drawing.Image.FromFile(selectedFileName);
+
                     BitmapImage bitmap = new BitmapImage();
                     bitmap.BeginInit();
                     bitmap.UriSource = new Uri(selectedFileName);
                     bitmap.EndInit();
 
-                    Image = bitmap;
+                    Image = bitmap;     
                 }
             }
             catch (Exception e)
@@ -233,6 +246,38 @@ namespace AppClient.ViewModels
 
             Title = card.Title;
             Image = card.Image;
+        }
+
+        public byte[] ImageToBytes(BitmapImage imageSource)
+        {
+            if (imageSource == null) return new byte[0];
+            Stream stream = imageSource.StreamSource;
+            byte[] buffer = null;
+            if (stream != null && stream.Length > 0)
+            {
+                using (BinaryReader br = new BinaryReader(stream))
+                {
+                    buffer = br.ReadBytes((int)stream.Length);
+                }
+            }
+
+            return buffer;
+        }
+        public BitmapImage BytesToImage(byte[] array)
+        {
+            if (array == null)
+            {
+                return null;
+            }
+            using (var ms = new System.IO.MemoryStream(array))
+            {
+                var image = new BitmapImage();
+                image.BeginInit();
+                image.CacheOption = BitmapCacheOption.OnLoad; // here
+                image.StreamSource = ms;
+                image.EndInit();
+                return image;
+            }
         }
 
         #endregion

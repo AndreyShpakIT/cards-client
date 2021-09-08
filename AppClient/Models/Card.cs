@@ -20,5 +20,6 @@ namespace AppClient.Models
             get => image;
             set => SetValue(ref image, value);
         }
+        public string ImageBytes { get; set; }
     }
 }
