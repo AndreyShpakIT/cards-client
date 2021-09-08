@@ -199,6 +199,10 @@ namespace AppClient.ViewModels
             {
                 MessageBox.Show("HttpRequestException: " + re.Message);
             }
+            catch (AggregateException e)
+            {
+                MessageBox.Show("Time out. Please try later.");
+            }
             catch (Exception)
             {
 
@@ -216,6 +220,10 @@ namespace AppClient.ViewModels
             catch (HttpRequestException re)
             {
                 MessageBox.Show("HttpRequestException: " + re.Message);
+            }
+            catch (AggregateException e)
+            {
+                MessageBox.Show("Time out. Please try later.");
             }
             catch (Exception)
             {
@@ -269,9 +277,18 @@ namespace AppClient.ViewModels
                     MessageBox.Show("Operation failed!");
                 }
             }
-            catch (HttpRequestException re)
+            catch (HttpRequestException e)
             {
-                MessageBox.Show(nameof(HttpRequestException) + ": " + re.Message);
+                MessageBox.Show(nameof(HttpRequestException) + ": " + e.Message);
+
+            }
+            catch (ObjectDisposedException e)
+            {
+                MessageBox.Show(nameof(ObjectDisposedException) + ": " + e.Message);
+            }
+            catch (AggregateException e)
+            {
+                MessageBox.Show("Time out. Please try later.");
             }
             catch (Exception e) 
             {
