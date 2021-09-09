@@ -88,7 +88,7 @@ namespace AppClient
         public static Task<HttpResponseMessage> DeleteCall(long[] ids)
         {
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-            string apiUrl = CreateUri() + DeleteUri;
+            string apiUrl = CreateUri() + CardsUri + DeleteUri;
             using (HttpClient client = new HttpClient())
             {
                 client.BaseAddress = new Uri(apiUrl);
